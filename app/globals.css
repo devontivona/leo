@@ -1,0 +1,37 @@
+@import "tailwindcss";
+@import "./platinum.theme.css";
+
+/*
+ * Base desktop. Window/button/menu chrome is built on top of the Platinum
+ * tokens above (see DESIGN.md). Keep new color/spacing values in DESIGN.md and
+ * regenerate with `npm run design:export` — don't hardcode them here.
+ */
+
+/*
+ * The single scale knob. Type and spacing are in rem, so the whole UI scales
+ * from this one value. Bigger on phones (primary target), denser on wide
+ * screens. Borders/radii stay in px and do NOT scale — see DESIGN.md > Layout.
+ */
+html {
+  font-size: 18px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-desktop);
+  color: var(--color-ink);
+  font-family: Charcoal, Geneva, Tahoma, sans-serif;
+  font-size: var(--text-body);
+  line-height: 1.3;
+}

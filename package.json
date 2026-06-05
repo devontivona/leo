@@ -1,0 +1,34 @@
+{
+  "name": "leo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Leo's desktop — a private baby site styled as a Mac OS 9 Platinum computer.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "design:lint": "design.md lint DESIGN.md",
+    "design:spec": "design.md spec",
+    "design:export:css": "design.md export --format css-tailwind DESIGN.md > app/platinum.theme.css",
+    "design:export:tailwind": "design.md export --format json-tailwind DESIGN.md > design.tailwind.json",
+    "design:export:tokens": "design.md export --format dtcg DESIGN.md > design.tokens.json",
+    "design:export": "npm run design:export:css && npm run design:export:tailwind && npm run design:export:tokens"
+  },
+  "dependencies": {
+    "next": "16.2.7",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@google/design.md": "^0.2.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.7",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
