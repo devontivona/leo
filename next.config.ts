@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   // Allow the dev machine's LAN hostname so HMR works when testing on the
   // iPhone over the local network (Next 16 blocks cross-origin dev resources
   // by default). Dev-only; has no effect on production.
-  allowedDevOrigins: ["janeway.local"],
+  allowedDevOrigins: ["janeway.local", "janeway.tail7f149.ts.net"],
 };
 
 export default nextConfig;

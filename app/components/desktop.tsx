@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AgeClock } from "./age-clock";
 import { AppleLogo } from "./apple-logo";
 import { Window } from "./window";
 import { MilestonesApp, PhotosApp, ScheduleApp } from "./placeholder-apps";
@@ -47,6 +48,7 @@ export function Desktop() {
         <AppleLogo className="h-[1.05em] w-[1.05em] -translate-y-[0.06em]" />
         <span>Leo</span>
         <span className="text-platinumDark">{front ? APPS.find((a) => a.id === front)?.name : "Special"}</span>
+        <AgeClock />
       </div>
 
       {/* Desktop field — relative so windows can position absolutely over the

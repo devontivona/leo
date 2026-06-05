@@ -39,21 +39,56 @@ export function Window({
   const [zoomed, setZoomed] = useState(false);
   // Drag origin, tracked in a ref so moves don't re-render until we setPos.
   const drag = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null);
+  // This pointer-down: its start, and whether it has moved past the tap slop.
+  const down = useRef<{ t: number; x: number; y: number; moved: boolean } | null>(null);
+  // The previous tap, for double-tap detection (works for touch and mouse).
+  const lastTap = useRef<{ t: number; x: number; y: number } | null>(null);
+
+  const TAP_SLOP = 8; // px of movement before a press counts as a drag, not a tap
+  const DBL_MS = 350; // max gap between taps
+  const DBL_DIST = 28; // px the two taps must stay within
 
   function onTitleDown(e: PointerEvent<HTMLDivElement>) {
     onFocus?.();
-    if (zoomed) return; // a maximized window isn't draggable
-    e.currentTarget.setPointerCapture(e.pointerId);
+    down.current = { t: e.timeStamp, x: e.clientX, y: e.clientY, moved: false };
+    if (zoomed) return; // a maximized window isn't draggable, but still taps
     drag.current = { sx: e.clientX, sy: e.clientY, ox: pos.x, oy: pos.y };
+    e.currentTarget.setPointerCapture(e.pointerId);
   }
   function onTitleMove(e: PointerEvent<HTMLDivElement>) {
+    if (down.current && !down.current.moved) {
+      if (Math.abs(e.clientX - down.current.x) > TAP_SLOP || Math.abs(e.clientY - down.current.y) > TAP_SLOP) {
+        down.current.moved = true;
+      }
+    }
     if (!drag.current) return;
     const { sx, sy, ox, oy } = drag.current;
     setPos({ x: ox + (e.clientX - sx), y: oy + (e.clientY - sy) });
   }
   function onTitleUp(e: PointerEvent<HTMLDivElement>) {
     drag.current = null;
-    e.currentTarget.releasePointerCapture(e.pointerId);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    // A press that moved was a drag, not a tap — reset the double-tap tracker.
+    const d = down.current;
+    down.current = null;
+    if (!d || d.moved) {
+      lastTap.current = null;
+      return;
+    }
+    const prev = lastTap.current;
+    const isDouble =
+      prev &&
+      e.timeStamp - prev.t < DBL_MS &&
+      Math.abs(e.clientX - prev.x) < DBL_DIST &&
+      Math.abs(e.clientY - prev.y) < DBL_DIST;
+    if (isDouble) {
+      setZoomed((z) => !z); // double-tap the header toggles full screen
+      lastTap.current = null; // so a third tap starts fresh
+    } else {
+      lastTap.current = { t: e.timeStamp, x: e.clientX, y: e.clientY };
+    }
   }
 
   return (
@@ -81,7 +116,7 @@ export function Window({
         onPointerDown={onTitleDown}
         onPointerMove={onTitleMove}
         onPointerUp={onTitleUp}
-        className="flex cursor-default select-none items-center gap-2 px-1 py-1"
+        className="flex cursor-default select-none items-center gap-2 px-1"
         style={{
           borderBottom: `1px solid ${INK}`,
           touchAction: "none",
@@ -91,8 +126,11 @@ export function Window({
         }}
       >
         <TitleBox kind="close" active={active} onClick={() => onClose?.()} />
+        {/* The title plaque takes the full bar height (its py defines the bar's
+            height) so the pinstripes stop cleanly at its edges instead of
+            running above and below the text — as on real Platinum. */}
         <span
-          className="mx-auto px-2 text-title font-bold leading-none"
+          className="mx-auto px-2 py-1.5 text-title font-bold leading-none"
           style={{ background: PLATINUM, color: active ? INK : "#999999" }}
         >
           {title}
