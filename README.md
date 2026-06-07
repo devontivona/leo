@@ -19,13 +19,19 @@ sit on the desktop, and each one opens in its own classic window.
 ## Stack
 
 - [Next.js](https://nextjs.org/) (App Router)
-- Postgres (Supabase) for storage
+- [Neon](https://neon.tech/) serverless Postgres, reached only through a
+  server-only data layer via Server Actions — no DB credentials in the browser.
 - Private to the two of us — no public access.
 
 ## Develop
 
+Requires Node ≥20.9 (`.nvmrc` pins 22). Put your Neon connection string in
+`.env.local`:
+
 ```bash
+echo 'DATABASE_URL=postgres://…' > .env.local
 npm install
+npm run db:migrate   # create the schema (idempotent)
 npm run dev
 ```
 

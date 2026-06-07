@@ -4,7 +4,8 @@ import { useState } from "react";
 import { AgeClock } from "./age-clock";
 import { AppleLogo } from "./apple-logo";
 import { Window } from "./window";
-import { MilestonesApp, PhotosApp, ScheduleApp } from "./placeholder-apps";
+import { ScheduleApp } from "./schedule/schedule-app";
+import { MilestonesApp, PhotosApp } from "./placeholder-apps";
 
 type AppId = "schedule" | "photos" | "milestones";
 

@@ -1,16 +1,7 @@
 "use client";
 
 import { useRef, useState, type PointerEvent, type ReactNode } from "react";
-
-// Bevel inks. Borders/radii stay in px (hairlines must not scale); these are the
-// 1px edge lines from DESIGN.md that fake top-left light.
-const INK = "#000000";
-const HIGHLIGHT = "#ffffff";
-const SHADOW = "#808080";
-const PLATINUM = "#cccccc";
-
-const RAISED = `inset 1px 1px 0 ${HIGHLIGHT}, inset -1px -1px 0 ${SHADOW}`;
-const PRESSED = `inset 1px 1px 0 ${SHADOW}, inset -1px -1px 0 ${HIGHLIGHT}`;
+import { HIGHLIGHT, INK, PLATINUM, PRESSED, RAISED } from "./ui/bevel";
 
 type Pos = { x: number; y: number };
 

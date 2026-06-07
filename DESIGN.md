@@ -155,6 +155,10 @@ font-size.
 
 - **Window:** 1px ink outline, platinum body, pinstriped title bar with a close box (top-left) and zoom/collapse boxes (top-right). Draggable by the title bar.
 - **Button:** platinum face, two-tone bevel, `1rem` bold label. The default button gets a 2–3px accent-blue ring. Pressed state inverts the bevel. Give genuinely tappable controls a comfortable min height so they're easy to hit on a phone.
+- **Segmented control:** a row of joined beveled buttons sharing hairline dividers. The selected segment(s) sit pressed in (inverted bevel). Single-select for either/or choices; multi-select where more than one can be on at once.
+- **Checkbox:** a small beveled platinum box that reads pressed-in when checked, with a 1px ink check mark, and a label to its right. Square, never round (rounds are for radio buttons).
+- **Text field:** a recessed white-paper well (inverted bevel, 1px ink outline) holding native input text. Wrap native pickers (date/time/number) in the same chrome so the phone keeps its built-in pickers. Editable content stays selectable.
+- **Timer:** a live elapsed-time readout in Monaco/tabular figures (`M:SS`, or `H:MM:SS` past an hour) so the digits don't jitter as it ticks.
 - **Menu bar:** white strip across the top, black labels, blue selection highlight on open menus.
 - **Scrollbar:** platinum track with a faint pinstripe, a beveled draggable thumb, and arrow buttons at each end.
 - **Desktop icon:** small pixel icon with a white label below; selected icons invert the label to the selection color.

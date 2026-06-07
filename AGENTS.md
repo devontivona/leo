@@ -32,9 +32,22 @@ Photos*, not "Baby Tracker." Keep that voice playful and consistent.
 
 ## Conventions
 
-- Next.js App Router. Keep retro UI primitives (window, button, scrollbar, etc.)
-  as shared, reusable components — don't re-style chrome per app.
-- Data lives in Postgres (Supabase). Keep it private; no public/unauthenticated access.
+- Next.js App Router. Keep retro UI primitives (window, button, field, checkbox,
+  segmented control, etc.) as shared, reusable components in `app/components/ui/`
+  — don't re-style chrome per app. Bevel tokens live in `app/components/ui/bevel.ts`.
+- **Data lives in Neon (serverless Postgres).** Access it only through the
+  server-only Data Access Layer (`data/*`, `lib/db.ts`), exposed to the client as
+  thin Server Actions (`app/**/actions.ts`). `DATABASE_URL` and the `neon()`
+  client never reach a client bundle — `data/*` and `lib/*` start with
+  `import "server-only"`, and actions return DTOs, not raw rows. Validate action
+  input with Zod at the DAL boundary.
+- Auth is deferred but gated: every DAL function awaits `assertAuthorized()`
+  (`lib/auth.ts`) — the single seam where a household PIN drops in. Keep it
+  private; no public/unauthenticated access.
+- **Timestamps are stored UTC, displayed in the viewer's local timezone.** Use DB
+  `now()` for "happening now"; convert local form input to UTC via `toISOString()`.
+  (Cross-timezone viewing shows the viewer's wall clock — fine for one household.)
+  Migrations are append-only `db/*.sql`, applied by `npm run db:migrate`.
 
 ## Scope
 

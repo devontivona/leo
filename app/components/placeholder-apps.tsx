@@ -1,55 +1,9 @@
-// Placeholder content for the three apps, just enough to test the window chrome
-// and the Platinum vocabulary inside a window. Real data wiring comes later.
-import type { ReactNode } from "react";
+// Placeholder content for Photos & Milestones, just enough to test the window
+// chrome and the Platinum vocabulary inside a window. (My Schedule is now real —
+// see app/components/schedule/.)
+import { Well } from "./ui/well";
 
 const INK = "#000000";
-const SHADOW = "#808080";
-const HIGHLIGHT = "#ffffff";
-
-// A recessed paper well — dark bevel top-left, light bottom-right — for list and
-// content areas, per DESIGN.md "pressed / recessed".
-function Well({ children }: { children: ReactNode }) {
-  return (
-    <div
-      className="bg-paper"
-      style={{
-        border: `1px solid ${INK}`,
-        boxShadow: `inset 1px 1px 0 ${SHADOW}, inset -1px -1px 0 ${HIGHLIGHT}`,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-export function ScheduleApp() {
-  const rows = [
-    { time: "6:02 AM", label: "Woke up" },
-    { time: "6:20 AM", label: "Bottle — 90 ml" },
-    { time: "7:15 AM", label: "Diaper — wet" },
-    { time: "8:40 AM", label: "Down for a nap" },
-    { time: "10:05 AM", label: "Woke up" },
-  ];
-  return (
-    <div className="flex flex-col gap-2" style={{ width: "18rem", maxWidth: "100%" }}>
-      <p className="text-small text-platinumDark">Today, so far</p>
-      <Well>
-        <ul>
-          {rows.map((r, i) => (
-            <li
-              key={r.time}
-              className="flex items-baseline gap-2 px-2 py-1 text-body"
-              style={{ borderTop: i === 0 ? "none" : `1px solid #e0e0e0` }}
-            >
-              <span className="w-20 shrink-0 text-small text-platinumDark">{r.time}</span>
-              <span>{r.label}</span>
-            </li>
-          ))}
-        </ul>
-      </Well>
-    </div>
-  );
-}
 
 export function PhotosApp() {
   const cells = Array.from({ length: 9 });
