@@ -5,7 +5,8 @@ import { AgeClock } from "./age-clock";
 import { AppleLogo } from "./apple-logo";
 import { Window } from "./window";
 import { ScheduleApp } from "./schedule/schedule-app";
-import { MilestonesApp, PhotosApp } from "./placeholder-apps";
+import { PhotosApp } from "./photos/photos-app";
+import { MilestonesApp } from "./placeholder-apps";
 
 type AppId = "schedule" | "photos" | "milestones";
 
@@ -42,7 +43,9 @@ export function Desktop() {
   }
 
   return (
-    <div className="flex min-h-full flex-col">
+    // h-full (not min-h-full) gives the desktop field a definite height so a
+    // floating window's maxHeight (calc(100% - y)) resolves and its body can scroll.
+    <div className="flex h-full flex-col">
       {/* Menu bar */}
       <div className="flex items-center gap-3 border-b border-ink bg-paper px-2 py-1.5 text-title font-bold leading-none">
         {/* nudge the bottom-heavy apple up so its mass aligns with the text */}

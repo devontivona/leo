@@ -1,31 +1,9 @@
-// Placeholder content for Photos & Milestones, just enough to test the window
-// chrome and the Platinum vocabulary inside a window. (My Schedule is now real —
-// see app/components/schedule/.)
+// Placeholder content for Milestones, just enough to test the window chrome and
+// the Platinum vocabulary inside a window. (My Schedule and My Photos are now
+// real — see app/components/schedule/ and app/components/photos/.)
 import { Well } from "./ui/well";
 
 const INK = "#000000";
-
-export function PhotosApp() {
-  const cells = Array.from({ length: 9 });
-  return (
-    <div className="flex flex-col gap-2" style={{ width: "18rem", maxWidth: "100%" }}>
-      <p className="text-small text-platinumDark">My Photos · 9 pictures</p>
-      <Well>
-        <div className="grid grid-cols-3 gap-1 p-1">
-          {cells.map((_, i) => (
-            <div
-              key={i}
-              className="grid aspect-square place-items-center text-small text-platinumDark"
-              style={{ background: "#dededb", border: `1px solid #b8b8b3` }}
-            >
-              ◍
-            </div>
-          ))}
-        </div>
-      </Well>
-    </div>
-  );
-}
 
 export function MilestonesApp() {
   const items = [

@@ -97,6 +97,10 @@ export function Window({
         width: zoomed ? "100%" : "min(22rem, calc(100vw - 1rem))",
         height: zoomed && !collapsed ? "100%" : undefined,
         maxWidth: zoomed ? undefined : "calc(100vw - 1rem)",
+        // Floating windows are content-sized but must never run past the bottom of
+        // the desktop (which clips overflow); cap to the space below the title and
+        // let the body scroll. Floor at 8rem so a window dragged low stays usable.
+        maxHeight: zoomed ? undefined : `max(8rem, calc(100% - ${pos.y}px - 0.5rem))`,
         border: `1px solid ${INK}`,
         background: PLATINUM,
         boxShadow: RAISED,
@@ -130,11 +134,12 @@ export function Window({
         <TitleBox kind="zoom" active={active} onClick={() => setZoomed((z) => !z)} />
       </div>
 
-      {/* Body — hidden when collapsed (window-shade roll-up). When maximized it
-          grows to fill the window and scrolls if the content overflows. */}
+      {/* Body — hidden when collapsed (window-shade roll-up). Fills the window
+          (capped by maxHeight above) and scrolls when the content overflows, in
+          both floating and maximized modes. min-h-0 lets the flex child shrink. */}
       {!collapsed && (
         <div
-          className={zoomed ? "flex-1 overflow-auto p-2" : "p-2"}
+          className="min-h-0 flex-1 overflow-auto p-2"
           style={{ background: PLATINUM }}
         >
           {children}

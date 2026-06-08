@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# uploaded photo bytes (My Photos; metadata lives in Neon) — see lib/photo-store.ts
+/.photo-data
+
 # debug
 npm-debug.log*
 yarn-debug.log*
