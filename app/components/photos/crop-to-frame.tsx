@@ -205,6 +205,8 @@ export function CropToFrame({
 
   async function publish() {
     if (!frameId || !nat || !view) return;
+    const frame = onlineFrames.find((f) => f.id === frameId);
+    if (!frame) return;
     setBusy(true);
     setError(null);
     try {
@@ -212,7 +214,7 @@ export function CropToFrame({
       const blob = await renderBlob(crop);
       const form = new FormData();
       form.set("id", photo.id);
-      form.set("frameId", frameId);
+      form.set("baseUrl", frame.baseUrl);
       form.set("crop", JSON.stringify(crop));
       form.set("framed", new File([blob], "framed.jpg", { type: "image/jpeg" }));
       await onPublish(form);
@@ -300,7 +302,7 @@ export function CropToFrame({
         {onlineFrames.length === 0 ? (
           <div className="flex flex-col gap-1">
             <p className="text-small" style={{ color: "#a00000" }}>
-              No frame connected. Turn the frame on and point it at Leo (ws://&lt;this-computer&gt;:8080).
+              No frame found on the network. Turn the frame on, then check again.
             </p>
             <Button onClick={onRefreshFrames}>Check again</Button>
           </div>

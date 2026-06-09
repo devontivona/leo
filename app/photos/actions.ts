@@ -1,16 +1,15 @@
 "use server";
 
 // Thin Server Action wrappers for My Photos. Validation, authorization, SQL, and
-// file writes all live behind the server-only DAL (data/photos.ts) and the frame
-// server (lib/frame-server.ts); these just cross the client→server boundary and
-// unpack FormData for the binary (upload / publish) paths. The client tree holds
-// photos in useState and refetches after each mutation, so there's nothing to
+// file writes all live behind the server-only DAL (data/photos.ts) and the EO
+// helpers (lib/eo.ts); these just cross the client→server boundary and unpack
+// FormData for the binary (upload / publish) paths. The client tree holds photos
+// in useState and refetches after each mutation, so there's nothing to
 // revalidate here (same approach as app/schedule/actions.ts).
 
-import { headers } from "next/headers";
 import { createPhoto, deletePhoto, listPhotos, markPublished } from "@/data/photos";
-import { listFrames, publishToFrame } from "@/lib/frame-server";
-import type { FrameCrop, PhotoDTO } from "@/app/components/photos/types";
+import { eoClient, listEOs } from "@/lib/eo";
+import type { FrameCrop, FrameDTO, PhotoDTO } from "@/app/components/photos/types";
 
 export async function listPhotosAction(): Promise<PhotoDTO[]> {
   return listPhotos();
@@ -20,8 +19,10 @@ export async function deletePhotoAction(input: { id: string }): Promise<void> {
   return deletePhoto(input);
 }
 
-export async function listFramesAction() {
-  return listFrames();
+/** Discover EO frames on the LAN. (Named "frames" to match the UI vocabulary.) */
+export async function listFramesAction(): Promise<FrameDTO[]> {
+  const eos = await listEOs();
+  return eos.map((e) => ({ id: e.id, name: e.name, baseUrl: e.baseUrl, online: true }));
 }
 
 function intOrUndef(v: FormDataEntryValue | null): number | undefined {
@@ -47,32 +48,21 @@ export async function uploadPhotoAction(form: FormData): Promise<PhotoDTO> {
   });
 }
 
-// Where the frame should fetch the published image. Prefer an explicit env (a
-// LAN IP the old-Android WebView can resolve); otherwise derive it from the
-// request host (works when you loaded Leo at that same address).
-async function imageBaseUrl(): Promise<string> {
-  const explicit = process.env.FRAME_PUBLIC_BASE_URL;
-  if (explicit) return explicit.replace(/\/+$/, "");
-  const h = await headers();
-  const host = h.get("host");
-  if (!host) throw new Error("Couldn't determine this server's address. Set FRAME_PUBLIC_BASE_URL.");
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  return `${proto}://${host}`;
-}
-
 /**
- * Publish one photo to a frame: store the 1080×1920 crop, mark it published, then
- * push the URL to the chosen frame over the WebSocket. Saving the file before
- * sending avoids the frame fetching before the bytes are on disk.
+ * Publish one photo to an EO frame: store the 1080×1920 crop locally, mark it
+ * published, then POST the bytes straight to the frame's HTTP API (the EO stores
+ * them by content hash and displays immediately). No URL is involved — the frame
+ * never fetches back from Leo, so this works regardless of how Leo is reached.
  */
 export async function publishPhotoAction(
   form: FormData,
-): Promise<{ photo: PhotoDTO; frameName: string; url: string }> {
+): Promise<{ photo: PhotoDTO; frameName: string }> {
   const id = String(form.get("id") ?? "");
-  const frameId = String(form.get("frameId") ?? "");
+  const baseUrl = String(form.get("baseUrl") ?? "");
   const framed = form.get("framed");
   const cropRaw = form.get("crop");
 
+  if (!baseUrl) throw new Error("No frame was selected.");
   if (!(framed instanceof File)) throw new Error("No cropped image was provided.");
   let crop: FrameCrop;
   try {
@@ -81,19 +71,17 @@ export async function publishPhotoAction(
     throw new Error("Invalid crop data.");
   }
 
-  // Confirm the frame is connected before we write anything.
-  const frame = listFrames().find((f) => f.id === frameId);
-  if (!frame) throw new Error("That frame isn't connected. Make sure it's on and pointed at Leo.");
-  if (!frame.online) throw new Error("That frame appears to be offline. Try again in a moment.");
+  // Confirm the frame is reachable (and get its current name) before writing.
+  const client = eoClient(baseUrl);
+  let frameName: string;
+  try {
+    frameName = (await client.getInfo()).name;
+  } catch {
+    throw new Error("That frame isn't reachable. Make sure it's on and on the same network.");
+  }
 
   const bytes = Buffer.from(await framed.arrayBuffer());
-  const photo = await markPublished({ id, bytes, crop, frameName: frame.name });
-
-  // The URL MUST end in a real image extension: the EO frame classifies media by
-  // url.endsWith(".jpg") — a query string makes it think the image is a video
-  // ("Streaming… / video error"). No cache-buster needed: the frame wipes its
-  // image cache on every URL_UPDATE, so a re-publish always re-downloads.
-  const url = `${await imageBaseUrl()}/api/photos/${id}/framed.jpg`;
-  const frameName = publishToFrame(frameId, url);
-  return { photo, frameName, url };
+  const photo = await markPublished({ id, bytes, crop, frameName });
+  await client.uploadMedia(new Uint8Array(bytes), { type: "image", name: `${id}.jpg` });
+  return { photo, frameName };
 }

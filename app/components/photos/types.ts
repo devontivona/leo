@@ -23,10 +23,12 @@ export interface PhotoDTO {
   lastFrame: string | null;
 }
 
-/** A photo frame currently connected to Leo's WebSocket server. */
+/** An EO frame discovered on the LAN (mDNS / subnet scan / configured host). */
 export interface FrameDTO {
   id: string;
   name: string;
+  /** Base URL to push to, e.g. http://192.168.1.79:8080 */
+  baseUrl: string;
+  /** Discovered frames are reachable by definition; kept for the UI's filter. */
   online: boolean;
-  currentUrl: string | null;
 }
