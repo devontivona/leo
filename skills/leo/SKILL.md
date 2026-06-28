@@ -22,14 +22,13 @@ or `--at`. Times are stored UTC and shown in your local time.
 If `leo` isn't already on PATH, install it once from the repo:
 
 ```
-bash cli/install.sh        # installs deps, links `leo`, seeds DATABASE_URL
+bash cli/install.sh        # installs deps, adds a `leo` launcher, seeds DATABASE_URL
 ```
 
-or by hand:
-
-```
-cd cli && npm install && npm link
-```
+This installs the one dependency, drops a small `leo` launcher in `~/.local/bin`
+(pinned to Node 22 + the script, so it works even from non-interactive shells),
+and seeds `DATABASE_URL`. By hand: `cd cli && npm install`, then put a launcher
+on your PATH (`exec node /abs/path/to/cli/leo.mjs "$@"`) or `npm link`.
 
 It needs **Node ≥ 20.9** (this machine defaults to Node 16 — run `nvm use 22`
 first) and a `DATABASE_URL` for the Neon database. The installer copies that
