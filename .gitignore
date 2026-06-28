@@ -47,3 +47,6 @@ next-env.d.ts
 /app/platinum.theme.css
 /design.tailwind.json
 /design.tokens.json
+
+# leo CLI — installed deps (the one runtime dep, linked globally via npm link)
+/cli/node_modules

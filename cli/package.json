@@ -1,0 +1,16 @@
+{
+  "name": "leo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Leo's own CLI — log feeds, naps, and diapers to his schedule from the terminal.",
+  "type": "module",
+  "bin": {
+    "leo": "./leo.mjs"
+  },
+  "engines": {
+    "node": ">=20.9"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0"
+  }
+}

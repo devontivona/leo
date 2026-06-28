@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Install the `leo` CLI globally on this machine.
+#
+#   bash cli/install.sh
+#
+# Does three things:
+#   1. installs the CLI's one dependency (@neondatabase/serverless),
+#   2. `npm link`s it so `leo` is on your PATH everywhere,
+#   3. seeds ~/.config/leo/env with DATABASE_URL from the repo's .env.local
+#      (so `leo` works from any directory, not just the checkout).
+#
+# Requires Node >= 20.9. This machine defaults to Node 16 — if you use nvm,
+# run `nvm use 22` first (or this script will try it for you).
+
+set -euo pipefail
+
+CLI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$CLI_DIR/.." && pwd)"
+
+# Best-effort: switch to a modern Node via nvm if the current one is too old.
+node_major="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
+if [ "$node_major" -lt 20 ]; then
+  if [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]; then
+    # shellcheck disable=SC1091
+    . "${NVM_DIR:-$HOME/.nvm}/nvm.sh"
+    nvm use 22 >/dev/null 2>&1 || nvm use --lts >/dev/null 2>&1 || true
+  fi
+  node_major="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
+  if [ "$node_major" -lt 20 ]; then
+    echo "leo needs Node >= 20.9 (found $(node -v 2>/dev/null || echo none)). Run 'nvm use 22' and retry." >&2
+    exit 1
+  fi
+fi
+
+echo "→ installing CLI dependencies"
+( cd "$CLI_DIR" && npm install --silent )
+
+echo "→ linking 'leo' onto your PATH"
+( cd "$CLI_DIR" && npm link )
+
+# Seed ~/.config/leo/env from the repo's .env.local if we have one and the
+# config doesn't already set DATABASE_URL.
+CONFIG_DIR="$HOME/.config/leo"
+CONFIG_FILE="$CONFIG_DIR/env"
+if [ -f "$REPO_DIR/.env.local" ] && ! grep -qs '^DATABASE_URL=' "$CONFIG_FILE" 2>/dev/null; then
+  db_url="$(grep -E '^DATABASE_URL=' "$REPO_DIR/.env.local" | head -n1 || true)"
+  if [ -n "$db_url" ]; then
+    mkdir -p "$CONFIG_DIR"
+    echo "$db_url" >> "$CONFIG_FILE"
+    echo "→ seeded $CONFIG_FILE with DATABASE_URL"
+  fi
+fi
+
+echo "✓ installed. Try: leo --help"
