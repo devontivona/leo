@@ -66,4 +66,12 @@ if [ -f "$REPO_DIR/.env.local" ] && ! grep -qs '^DATABASE_URL=' "$CONFIG_FILE" 2
   fi
 fi
 
+# Default the household timezone to Pacific unless already configured. Times are
+# entered/shown in this zone (stored UTC); edit LEO_TZ or pass --tz to change.
+if ! grep -qs '^LEO_TZ=' "$CONFIG_FILE" 2>/dev/null; then
+  mkdir -p "$CONFIG_DIR"
+  echo "LEO_TZ=America/Los_Angeles" >> "$CONFIG_FILE"
+  echo "→ set LEO_TZ=America/Los_Angeles in $CONFIG_FILE"
+fi
+
 echo "✓ installed. Try: leo --help"

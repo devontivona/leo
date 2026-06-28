@@ -72,10 +72,22 @@ event back as JSON instead of a human confirmation.
 
 - `--ago <dur>` — backdate by a duration: `30m`, `1h`, `1h15m` (bare number =
   minutes).
-- `--at <time>` — absolute time instead: `"14:30"`, `"2026-06-28 14:30"`, or ISO.
+- `--at <time>` — a specific time instead: `"14:30"` (today), `"2026-06-28
+  14:30"`, or full ISO. Interpreted in the local zone unless the ISO string
+  carries an offset.
 - `--for <dur>` — duration of a feed or nap.
 - `--note "<text>"` — attach a note (quote it if it has spaces).
+- `--tz <zone>` — IANA timezone override for this call (e.g. `America/New_York`).
 - `--json` — machine-readable output.
+
+## Timezones
+
+You never deal with UTC. Times are **entered and displayed in the household's
+local timezone — Pacific by default** — and stored as UTC under the hood, so the
+CLI and the My Schedule app always agree. So `leo feed --at "14:30"` means 2:30pm
+Pacific, and `leo log` prints Pacific times. To change the default, set
+`LEO_TZ=America/Denver` (an IANA name) in `~/.config/leo/env`, or pass `--tz` for
+a one-off (e.g. logging while traveling).
 
 ## Tips for agents
 

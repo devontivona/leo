@@ -61,10 +61,12 @@ function readEnvVar(file, key) {
   return null;
 }
 
+const CONFIG_FILE = join(homedir(), ".config", "leo", "env");
+
 function databaseUrl() {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
   const candidates = [
-    join(homedir(), ".config", "leo", "env"),
+    CONFIG_FILE,
     join(__dirname, "..", ".env.local"), // repo root when run from a checkout
     join(process.cwd(), ".env.local"),
   ];
@@ -83,11 +85,39 @@ function getSql() {
 }
 
 // ---------------------------------------------------------------------------
+// Timezone. Times are stored UTC but humans think in their local wall clock.
+// The household runs on Pacific by default; --tz or LEO_TZ override per call /
+// per machine. We set process.env.TZ so `--at` wall-clock strings parse in this
+// zone, and pass it explicitly to every formatter so display matches the app.
+// Explicit ISO offsets (…Z, +/-hh:mm) are always honored as absolute instants.
+// ---------------------------------------------------------------------------
+
+const DEFAULT_TZ = "America/Los_Angeles";
+let activeTz = DEFAULT_TZ;
+
+function resolveTimeZone(flags) {
+  return (
+    (typeof flags.tz === "string" && flags.tz) ||
+    process.env.LEO_TZ ||
+    readEnvVar(CONFIG_FILE, "LEO_TZ") ||
+    DEFAULT_TZ
+  );
+}
+
+function assertValidTz(tz) {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: tz });
+  } catch {
+    fail(`unknown timezone "${tz}" — use an IANA name like America/Los_Angeles`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Argument parsing — flat subcommands, a known set of value-taking flags.
 // Supports `--flag value`, `--flag=value`, and bare boolean `--flag`.
 // ---------------------------------------------------------------------------
 
-const VALUE_FLAGS = new Set(["ml", "ago", "at", "for", "note", "limit"]);
+const VALUE_FLAGS = new Set(["ml", "ago", "at", "for", "note", "limit", "tz"]);
 
 function parseArgs(argv) {
   const flags = {};
@@ -137,13 +167,31 @@ function parseDuration(s) {
   return parseInt(m[1] || "0", 10) * 60 + parseInt(m[2] || "0", 10);
 }
 
+/** YYYY-MM-DD for "now" in the active timezone (for bare HH:MM --at values). */
+function todayYMD() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: activeTz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+/** Parse --at. Bare "HH:MM" means today at that time in the active timezone;
+ *  full date-times parse in that zone; explicit ISO offsets stay absolute. */
+function parseAt(s) {
+  const str = String(s).trim();
+  const candidate = /^\d{1,2}:\d{2}$/.test(str) ? `${todayYMD()} ${str}` : str;
+  const d = new Date(candidate);
+  if (Number.isNaN(d.getTime())) {
+    fail(`bad --at "${s}" — use "HH:MM", "YYYY-MM-DD HH:MM", or full ISO`);
+  }
+  return d;
+}
+
 /** When did the event happen? --at wins (absolute), else now minus --ago. */
 function resolveStart(flags) {
-  if (flags.at !== undefined) {
-    const d = new Date(flags.at);
-    if (Number.isNaN(d.getTime())) fail(`bad --at "${flags.at}"`);
-    return d;
-  }
+  if (flags.at !== undefined) return parseAt(flags.at);
   const now = new Date();
   if (flags.ago !== undefined) {
     return new Date(now.getTime() - parseDuration(flags.ago) * 60000);
@@ -192,14 +240,16 @@ function rowToDTO(r) {
 // ---------------------------------------------------------------------------
 
 function clockTime(isoStr) {
-  return new Date(isoStr).toLocaleTimeString([], {
+  return new Date(isoStr).toLocaleTimeString(undefined, {
+    timeZone: activeTz,
     hour: "numeric",
     minute: "2-digit",
   });
 }
 
 function dayTime(isoStr) {
-  return new Date(isoStr).toLocaleString([], {
+  return new Date(isoStr).toLocaleString(undefined, {
+    timeZone: activeTz,
     month: "short",
     day: "numeric",
     hour: "numeric",
@@ -349,11 +399,16 @@ Reading:
 
 Shared options:
   --ago <dur>    Backdate the event by a duration (e.g. 30m, 1h15m).
-  --at <time>    Absolute time instead (local or ISO, e.g. "14:30", "2026-06-28 14:30").
+  --at <time>    Specific time instead: "HH:MM" (today), "YYYY-MM-DD HH:MM", or ISO.
+                 Interpreted in the active timezone unless an ISO offset is given.
   --for <dur>    Duration of a feed or nap (e.g. 20m, 1h). Default 0.
   --note <text>  Attach a note.
+  --tz <zone>    IANA timezone for this call (default Pacific, or $LEO_TZ).
   --json         Print the created row(s) as JSON instead of a confirmation.
   -h, --help     Show this help.
+
+Times are entered and shown in your local zone (Pacific by default), and stored
+UTC — matching the My Schedule app. Set LEO_TZ in ~/.config/leo/env to change it.
 
 Examples:
   leo feed --bottle --ml 120
@@ -378,6 +433,11 @@ async function main() {
     ok(HELP);
     return;
   }
+
+  // Resolve the timezone before any date is parsed or formatted.
+  activeTz = resolveTimeZone(flags);
+  assertValidTz(activeTz);
+  process.env.TZ = activeTz; // so `new Date("<wall clock>")` parses in this zone
 
   const emit = (dto) => (flags.json ? ok(JSON.stringify(dto, null, 2)) : confirm(dto));
 
