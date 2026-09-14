@@ -12,7 +12,7 @@ import { toLocalInputValue } from "./format";
 type Mode = "live" | "manual";
 
 const MODE_OPTIONS = [
-  { value: "live" as const, label: "Mark bedtime" },
+  { value: "live" as const, label: "Live timer" },
   { value: "manual" as const, label: "Enter manually" },
 ];
 
