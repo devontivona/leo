@@ -23,12 +23,9 @@ const INITIAL_POS: Record<AppId, { x: number; y: number }> = {
   milestones: { x: 72, y: 88 },
 };
 
-// My Schedule's timeline rows (start-end time range + title + detail) need
-// more room than the other apps' default phone-friendly width to lay out on
-// one line without wrapping.
-const WINDOW_WIDTH: Partial<Record<AppId, string>> = {
-  schedule: "27rem",
-};
+// My Schedule doesn't need extra width — its rows are two lines now (time on
+// top, title+detail below), so the default phone-friendly width is fine.
+const WINDOW_WIDTH: Partial<Record<AppId, string>> = {};
 
 const APP_BODY: Record<AppId, () => React.ReactNode> = {
   schedule: ScheduleApp,

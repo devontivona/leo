@@ -14,8 +14,7 @@ export interface WindowProps {
   onFocus?: () => void;
   onClose?: () => void;
   /** Floating (non-maximized) width, as a CSS length. Defaults to the
-   *  original phone-friendly "22rem" — widen for content that needs more
-   *  room to lay out on one line (e.g. My Schedule's timeline rows). */
+   *  original phone-friendly "22rem". */
   width?: string;
   children: ReactNode;
 }
