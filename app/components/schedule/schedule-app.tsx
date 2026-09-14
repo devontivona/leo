@@ -79,7 +79,7 @@ export function ScheduleApp() {
   );
 
   return (
-    <div className="flex flex-col gap-2" style={{ width: "20rem", maxWidth: "100%" }}>
+    <div className="flex flex-col gap-2" style={{ width: "100%" }}>
       {active.map((ev) => (
         <RunningTimerBanner key={ev.id} event={ev} onStop={() => run(() => stopTimedAction({ id: ev.id }))} />
       ))}

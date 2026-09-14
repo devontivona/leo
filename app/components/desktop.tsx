@@ -23,6 +23,13 @@ const INITIAL_POS: Record<AppId, { x: number; y: number }> = {
   milestones: { x: 72, y: 88 },
 };
 
+// My Schedule's timeline rows (start-end time range + title + detail) need
+// more room than the other apps' default phone-friendly width to lay out on
+// one line without wrapping.
+const WINDOW_WIDTH: Partial<Record<AppId, string>> = {
+  schedule: "27rem",
+};
+
 const APP_BODY: Record<AppId, () => React.ReactNode> = {
   schedule: ScheduleApp,
   photos: PhotosApp,
@@ -91,6 +98,7 @@ export function Desktop() {
               key={id}
               title={APPS.find((a) => a.id === id)!.name}
               initialPosition={INITIAL_POS[id]}
+              width={WINDOW_WIDTH[id]}
               active={id === front}
               zIndex={10 + i}
               onFocus={() => setOpen((cur) => bringToFront(cur, id))}

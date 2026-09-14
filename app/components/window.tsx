@@ -13,6 +13,10 @@ export interface WindowProps {
   zIndex?: number;
   onFocus?: () => void;
   onClose?: () => void;
+  /** Floating (non-maximized) width, as a CSS length. Defaults to the
+   *  original phone-friendly "22rem" — widen for content that needs more
+   *  room to lay out on one line (e.g. My Schedule's timeline rows). */
+  width?: string;
   children: ReactNode;
 }
 
@@ -23,6 +27,7 @@ export function Window({
   zIndex,
   onFocus,
   onClose,
+  width = "22rem",
   children,
 }: WindowProps) {
   const [pos, setPos] = useState(initialPosition);
@@ -91,10 +96,9 @@ export function Window({
       style={{
         // Maximized: fill the desktop field (inset 0). Otherwise float at pos
         // with a phone-friendly natural width.
-        left: zoomed ? 0 : pos.x,
-        top: zoomed ? 0 : pos.y,
+        left: zoomed ? 0 : pos.x,        top: zoomed ? 0 : pos.y,
         zIndex,
-        width: zoomed ? "100%" : "min(22rem, calc(100vw - 1rem))",
+        width: zoomed ? "100%" : `min(${width}, calc(100vw - 1rem))`,
         height: zoomed && !collapsed ? "100%" : undefined,
         maxWidth: zoomed ? undefined : "calc(100vw - 1rem)",
         // Floating windows are content-sized but must never run past the bottom of
