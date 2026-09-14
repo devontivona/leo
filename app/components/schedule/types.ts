@@ -1,7 +1,7 @@
 // Shared, plain-data types for the schedule. No runtime imports here, so this is
 // safe to import from both the server-only DAL and client components.
 
-export type EventType = "feed" | "sleep" | "diaper";
+export type EventType = "feed" | "sleep" | "bedtime" | "diaper";
 
 /**
  * A schedule event as the client sees it: camelCase, timestamps as ISO-UTC

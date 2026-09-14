@@ -281,6 +281,7 @@ function describe(dto) {
     return `feed (${src.join(", ")})`;
   }
   if (dto.type === "sleep") return "nap";
+  if (dto.type === "bedtime") return "bedtime";
   if (dto.type === "diaper") {
     const what = [dto.pee && "pee", dto.poo && "poop"].filter(Boolean);
     return what.length ? `diaper (${what.join(" + ")})` : "diaper (dry)";
@@ -333,6 +334,49 @@ async function createTimed(type, flags) {
   return rowToDTO(rows[0]);
 }
 
+/** Open a running timer (end_at null) at the resolved start — for events whose
+ *  end isn't known yet (bedtime: you know when he went down, not when he'll
+ *  wake). Closed later with `closeOpen`. */
+async function startOpen(type, flags) {
+  const start = resolveStart(flags);
+  const note = noteOption(flags);
+  const sql = getSql();
+  try {
+    const rows = await sql`
+      insert into events (type, start_at, note)
+      values (${type}, ${start.toISOString()}, ${note})
+      returning *
+    `;
+    return rowToDTO(rows[0]);
+  } catch (e) {
+    if (isUniqueViolation(e)) fail(`a ${type} is already running — close it first.`);
+    throw e;
+  }
+}
+
+function isUniqueViolation(e) {
+  return Boolean(e && (e.code === "23505" || /duplicate key/.test(e.message || "")));
+}
+
+/** Close the most recent open (end_at null) event of a type, at the resolved
+ *  end time (default now). */
+async function closeOpen(type, flags) {
+  const sql = getSql();
+  const open = await sql`
+    select * from events where type = ${type} and end_at is null
+    order by start_at desc limit 1
+  `;
+  if (!open.length) fail(`no ${type} is currently running.`);
+  const end = resolveStart(flags);
+  if (end < new Date(open[0].start_at)) {
+    fail(`that end time is before the ${type} started — check --at/--ago.`);
+  }
+  const rows = await sql`
+    update events set end_at = ${end.toISOString()} where id = ${open[0].id} returning *
+  `;
+  return rowToDTO(rows[0]);
+}
+
 async function createDiaper(flags, { pee, poo }) {
   const at = resolveStart(flags);
   const note = noteOption(flags);
@@ -375,6 +419,7 @@ function printStatus(dtos) {
     dto ? `${label}: ${describe(dto)} — ${humanizeAgo(dto.startAt)}` : `${label}: none yet`;
   ok(line("Last feed", last("feed")));
   ok(line("Last nap", last("sleep")));
+  ok(line("Last bedtime", last("bedtime")));
   ok(line("Last diaper", last("diaper")));
 }
 
@@ -388,7 +433,9 @@ Usage: leo <command> [options]
 
 Logging (happens "now" by default):
   feed     Log a feed.    --left  --right  --bottle  --ml <n>
-  nap      Log a nap (sleep).
+  nap      Log a nap (daytime sleep).
+  bedtime  Mark bedtime (opens an overnight sleep, no end time yet).
+  wake     Close out overnight sleep with a wake time. --at/--ago = wake time.
   pee      Log a wet diaper.
   poop     Log a dirty diaper.    --wet  (also wet)
   diaper   Log a diaper.    --pee  --poo   (neither = a dry change)
@@ -448,6 +495,12 @@ async function main() {
     case "nap":
     case "sleep":
       emit(await createTimed("sleep", flags));
+      return;
+    case "bedtime":
+      emit(await startOpen("bedtime", flags));
+      return;
+    case "wake":
+      emit(await closeOpen("bedtime", flags));
       return;
     case "pee":
       emit(await createDiaper(flags, { pee: true, poo: false }));

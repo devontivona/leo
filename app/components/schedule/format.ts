@@ -55,7 +55,10 @@ export function diaperWord(e: EventDTO): string {
 }
 
 export function rowTitle(e: EventDTO): string {
-  return e.type === "feed" ? "Fed" : e.type === "sleep" ? "Nap" : "Diaper";
+  if (e.type === "feed") return "Fed";
+  if (e.type === "sleep") return "Nap";
+  if (e.type === "bedtime") return "Bedtime";
+  return "Diaper";
 }
 
 /** The detail line for a timeline row (handles in-progress timers). */
@@ -68,6 +71,10 @@ export function rowDetail(e: EventDTO): string {
     const dur = formatDurationWords(Date.parse(e.endAt!) - Date.parse(e.startAt));
     return src ? `${src} · ${dur}` : dur;
   }
-  // sleep
+  if (e.type === "bedtime") {
+    if (running) return "asleep…";
+    return formatDurationWords(Date.parse(e.endAt!) - Date.parse(e.startAt));
+  }
+  // sleep (nap)
   return running ? "napping…" : formatDurationWords(Date.parse(e.endAt!) - Date.parse(e.startAt));
 }

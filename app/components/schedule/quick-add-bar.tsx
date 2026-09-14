@@ -2,7 +2,7 @@
 
 import { Button } from "../ui/button";
 
-export type FormKind = "none" | "feed" | "nap" | "diaper";
+export type FormKind = "none" | "feed" | "nap" | "bedtime" | "diaper";
 
 /** The three entry points. Tapping the open one closes it (toggle). */
 export function QuickAddBar({ open, onOpen }: { open: FormKind; onOpen: (k: FormKind) => void }) {
@@ -19,6 +19,7 @@ export function QuickAddBar({ open, onOpen }: { open: FormKind; onOpen: (k: Form
     <div className="flex gap-2">
       {tab("feed", "Feed")}
       {tab("nap", "Nap")}
+      {tab("bedtime", "Bedtime")}
       {tab("diaper", "Diaper")}
     </div>
   );

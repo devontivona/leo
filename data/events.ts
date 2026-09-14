@@ -9,7 +9,7 @@ import type { EventDTO, EventType } from "@/app/components/schedule/types";
 // ---------------------------------------------------------------------------
 
 export interface StartTimedInput {
-  type: "feed" | "sleep";
+  type: "feed" | "sleep" | "bedtime";
   fedLeft?: boolean;
   fedRight?: boolean;
   fedBottle?: boolean;
@@ -17,7 +17,7 @@ export interface StartTimedInput {
 }
 
 export interface CreateTimedInput {
-  type: "feed" | "sleep";
+  type: "feed" | "sleep" | "bedtime";
   startAt: string; // ISO UTC
   endAt: string; // ISO UTC
   fedLeft?: boolean;
@@ -45,7 +45,7 @@ const hasFeedSource = (v: { fedLeft?: boolean; fedRight?: boolean; fedBottle?: b
 
 const StartTimed = z
   .object({
-    type: z.enum(["feed", "sleep"]),
+    type: z.enum(["feed", "sleep", "bedtime"]),
     fedLeft: z.boolean().optional(),
     fedRight: z.boolean().optional(),
     fedBottle: z.boolean().optional(),
@@ -55,7 +55,7 @@ const StartTimed = z
 
 const CreateTimed = z
   .object({
-    type: z.enum(["feed", "sleep"]),
+    type: z.enum(["feed", "sleep", "bedtime"]),
     startAt: z.coerce.date(),
     endAt: z.coerce.date(),
     fedLeft: z.boolean().optional(),
@@ -138,7 +138,7 @@ export async function getActiveEvents(): Promise<EventDTO[]> {
   const sql = getSql();
   const rows = (await sql`
     select * from events
-    where end_at is null and type in ('feed', 'sleep')
+    where end_at is null and type in ('feed', 'sleep', 'bedtime')
     order by start_at desc
   `) as Row[];
   return rows.map(rowToDTO);
@@ -169,7 +169,8 @@ export async function startTimedEvent(input: StartTimedInput): Promise<EventDTO>
     return rowToDTO(rows[0]);
   } catch (e) {
     if (isUniqueViolation(e)) {
-      throw new Error(v.type === "feed" ? "A feed timer is already running." : "A nap timer is already running.");
+      const label = v.type === "feed" ? "A feed timer" : v.type === "bedtime" ? "Bedtime" : "A nap timer";
+      throw new Error(`${label} is already running.`);
     }
     throw e;
   }

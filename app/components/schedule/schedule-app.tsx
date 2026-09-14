@@ -7,6 +7,8 @@ import {
   listEventsAction,
   stopTimedAction,
 } from "@/app/schedule/actions";
+import { postToNative } from "@/lib/webview";
+import { BedtimeForm } from "./bedtime-form";
 import { DiaperForm } from "./diaper-form";
 import { FeedForm } from "./feed-form";
 import { NapForm } from "./nap-form";
@@ -52,6 +54,16 @@ export function ScheduleApp() {
     };
   }, []);
 
+  // Tell the native shell (if any) about the running feed so it can drive the
+  // background chime + Live Activity. No-op in a normal browser. Covers start,
+  // stop, and resume-on-open since `active` is set on mount and after mutations.
+  const feed = active.find((e) => e.type === "feed" && e.endAt === null) ?? null;
+  const feedRunning = feed !== null;
+  const feedStartAt = feed?.startAt ?? null;
+  useEffect(() => {
+    postToNative({ type: "feed", running: feedRunning, startAt: feedStartAt });
+  }, [feedRunning, feedStartAt]);
+
   // Run a mutation, then close any open form and refetch. Errors surface inline.
   const run = useCallback(
     (fn: () => Promise<unknown>) => {
@@ -82,6 +94,7 @@ export function ScheduleApp() {
 
       {form === "feed" && <FeedForm onSubmit={run} onCancel={() => setForm("none")} />}
       {form === "nap" && <NapForm onSubmit={run} onCancel={() => setForm("none")} />}
+      {form === "bedtime" && <BedtimeForm onSubmit={run} onCancel={() => setForm("none")} />}
       {form === "diaper" && <DiaperForm onSubmit={run} onCancel={() => setForm("none")} />}
 
       <TimelineList events={events} onDelete={(id) => run(() => deleteEventAction({ id }))} />
