@@ -49,20 +49,14 @@ export function TimelineList({
               {g.items.map((e, i) => (
                 <li
                   key={e.id}
-                  className="flex items-start gap-2 px-2 py-1.5 text-body"
+                  className="flex items-baseline gap-2 px-2 py-1 text-body"
                   style={{ borderTop: i === 0 ? "none" : "1px solid #e0e0e0" }}
                 >
-                  {/* Two-line row: the time (a start-end range for naps/bedtime
-                      can run long, e.g. "11:50 AM–12:10 PM") sits on its own
-                      line above the title + detail, so neither ever has to
-                      fight the other for horizontal room or wrap awkwardly. */}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-small tabular-nums text-platinumDark">{rowTime(e)}</p>
-                    <p className="truncate">
-                      <span className="font-bold">{rowTitle(e)}</span>{" "}
-                      <span className="text-small text-platinumDark">{rowDetail(e)}</span>
-                    </p>
-                  </div>
+                  <span className="w-[11rem] shrink-0 whitespace-nowrap pr-1 text-small tabular-nums text-platinumDark">
+                    {rowTime(e)}
+                  </span>
+                  <span className="shrink-0 font-bold">{rowTitle(e)}</span>
+                  <span className="flex-1 text-small text-platinumDark">{rowDetail(e)}</span>
                   <button
                     type="button"
                     aria-label="Delete entry"

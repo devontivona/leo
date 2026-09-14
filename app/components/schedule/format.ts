@@ -80,15 +80,21 @@ export function rowTitle(e: EventDTO): string {
 
 /** The detail line for a timeline row (handles in-progress timers). Naps and
  *  bedtime show their start/end in the leading time column (see
- *  formatTimeRange), so here they just need the duration. */
+ *  formatTimeRange), so here they just need the duration. Feeds are kept
+ *  minimal: a nursing session shows just its duration (no left/right); a
+ *  bottle shows its volume in place of the word "Bottle". */
 export function rowDetail(e: EventDTO): string {
   if (e.type === "diaper") return diaperWord(e);
   const running = e.endAt === null;
   if (e.type === "feed") {
-    const src = feedSources(e);
-    if (running) return src ? `${src} · feeding…` : "feeding…";
-    const dur = formatDurationWords(Date.parse(e.endAt!) - Date.parse(e.startAt));
-    return src ? `${src} · ${dur}` : dur;
+    if (e.fedBottle) {
+      const vol = e.bottleMl != null ? `${e.bottleMl} ml` : "Bottle";
+      if (running) return `${vol} · feeding…`;
+      const dur = formatDurationWords(Date.parse(e.endAt!) - Date.parse(e.startAt));
+      return `${vol} · ${dur}`;
+    }
+    if (running) return "feeding…";
+    return formatDurationWords(Date.parse(e.endAt!) - Date.parse(e.startAt));
   }
   if (e.type === "bedtime") {
     if (running) return "asleep…";
