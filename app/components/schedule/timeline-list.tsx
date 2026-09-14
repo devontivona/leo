@@ -45,29 +45,53 @@ export function TimelineList({
         {groups.map((g) => (
           <div key={g.key}>
             <p className="sticky top-0 bg-paper px-2 py-1 text-small font-bold text-platinumDark">{g.heading}</p>
-            <ul>
-              {g.items.map((e, i) => (
-                <li
-                  key={e.id}
-                  className="flex items-baseline gap-2 px-2 py-1 text-body"
-                  style={{ borderTop: i === 0 ? "none" : "1px solid #e0e0e0" }}
-                >
-                  <span className="shrink-0 whitespace-nowrap text-small tabular-nums text-platinumDark">
-                    {rowTime(e)}
-                  </span>
-                  <span className="shrink-0 font-bold">{rowTitle(e)}</span>
-                  <span className="flex-1 text-small text-platinumDark">{rowDetail(e)}</span>
-                  <button
-                    type="button"
-                    aria-label="Delete entry"
-                    onClick={() => remove(e)}
-                    className="shrink-0 px-1 text-small text-platinumDark"
-                  >
-                    ✕
-                  </button>
-                </li>
-              ))}
-            </ul>
+            {/*
+              A CSS grid — not flex — spanning every row in this day group.
+              Grid column tracks size to the widest CELL IN THAT COLUMN across
+              ALL rows (max-content), so the time column is exactly as wide as
+              its longest value here (e.g. a bedtime range) and no wider, and
+              every row's title ("Fed"/"Nap"/"Bedtime"…) lines up at the same
+              x position. Flexbox can't do this — each row would be its own
+              flex container, so a column can't share a width with its
+              siblings' rows without either overlapping (too narrow) or
+              wasting space (hardcoded too wide). `role="list"/"listitem"`
+              keeps the list semantics since the real elements are styling
+              divs, not literal ul/li (which CSS grid can't reshuffle like this).
+            */}
+            <div
+              role="list"
+              className="grid items-baseline text-body"
+              style={{ gridTemplateColumns: "max-content max-content 1fr max-content", columnGap: "0.5rem" }}
+            >
+              {g.items.map((e, i) => {
+                const border = i === 0 ? "none" : "1px solid #e0e0e0";
+                return (
+                  <div role="listitem" key={e.id} style={{ display: "contents" }}>
+                    <span
+                      className="whitespace-nowrap py-1 pl-2 text-small tabular-nums text-platinumDark"
+                      style={{ borderTop: border }}
+                    >
+                      {rowTime(e)}
+                    </span>
+                    <span className="py-1 font-bold" style={{ borderTop: border }}>
+                      {rowTitle(e)}
+                    </span>
+                    <span className="py-1 text-small text-platinumDark" style={{ borderTop: border }}>
+                      {rowDetail(e)}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="Delete entry"
+                      onClick={() => remove(e)}
+                      className="py-1 pr-2 text-small text-platinumDark"
+                      style={{ borderTop: border }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ))}
       </div>
