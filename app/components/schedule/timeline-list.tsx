@@ -1,7 +1,7 @@
 "use client";
 
 import { Well } from "../ui/well";
-import { dayHeading, dayKey, formatTime, rowDetail, rowTitle } from "./format";
+import { dayHeading, dayKey, rowDetail, rowTime, rowTitle } from "./format";
 import type { EventDTO } from "./types";
 
 export function TimelineList({
@@ -52,7 +52,9 @@ export function TimelineList({
                   className="flex items-baseline gap-2 px-2 py-1 text-body"
                   style={{ borderTop: i === 0 ? "none" : "1px solid #e0e0e0" }}
                 >
-                  <span className="w-16 shrink-0 text-small tabular-nums text-platinumDark">{formatTime(e.startAt)}</span>
+                  <span className="w-32 shrink-0 whitespace-nowrap text-small tabular-nums text-platinumDark">
+                    {rowTime(e)}
+                  </span>
                   <span className="shrink-0 font-bold">{rowTitle(e)}</span>
                   <span className="flex-1 text-small text-platinumDark">{rowDetail(e)}</span>
                   <button

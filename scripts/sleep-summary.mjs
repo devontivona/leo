@@ -1,9 +1,16 @@
 #!/usr/bin/env node
-// sleep-summary — compute the previous-24h sleep picture for the 9am daily
-// text: nap count + daytime total, last night's bedtime->wake span, and how
-// many times Leo woke to feed overnight. Outputs JSON; the scheduled job
-// reads it and decides whether to report the summary or ask for missing
-// pieces first.
+// sleep-summary — compute the previous day's sleep picture for the daily
+// text: nap count + daytime total + last nap's end time, last night's
+// bedtime->wake span, overnight feed count, and the full-period sleep total.
+// Outputs JSON; the scheduled job reads it and decides whether to report the
+// summary or ask for missing pieces first.
+//
+// Window definition (calendar-day, not clock-relative): naps come from
+// YESTERDAY's calendar day (local midnight to midnight); bedtime is the one
+// that STARTED yesterday (and, on a normal night, ends today). This matches
+// how a parent actually thinks about "yesterday" rather than a raw "last 24h
+// from whenever the job happens to run" window, which silently clips a
+// morning nap if the job runs a few minutes late.
 //
 // Reuses the same DATABASE_URL resolution + timezone conventions as
 // cli/leo.mjs (see that file for the rationale). Read-only — never writes.
@@ -16,6 +23,10 @@ import { neon } from "@neondatabase/serverless";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TZ = process.env.LEO_TZ || "America/Los_Angeles";
+// Naive date/time strings below (e.g. "2026-09-13T00:00:00") parse against
+// this process's local zone — pin it to the household zone, same trick the
+// CLI uses, so "midnight" means midnight Pacific regardless of host TZ.
+process.env.TZ = TZ;
 
 function readEnvVar(file, key) {
   let text;
@@ -59,38 +70,51 @@ function fmtClock(d) {
   return new Date(d).toLocaleTimeString("en-US", { timeZone: TZ, hour: "numeric", minute: "2-digit" });
 }
 
+/** Unified duration format used everywhere in the summary: "3h 4m", "10h", "45m". */
 function fmtDurationWords(ms) {
   const mins = Math.max(0, Math.round(ms / 60000));
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   if (h === 0) return `${m}m`;
-  return m ? `${h}h${m}m` : `${h}h`;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+function ymd(d) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** Local midnight (household TZ) for the calendar day containing `d`. */
+function localMidnight(d) {
+  return new Date(`${ymd(d)}T00:00:00`);
 }
 
 async function main() {
   const now = new Date();
-  const windowStart = new Date(now.getTime() - 24 * 3600 * 1000);
-  // Look back further than the 24h window for the bedtime candidate itself,
-  // since "last night's bedtime" for a 9am run started ~13-15h ago but the
-  // window edge could clip an early bedtime; 30h covers any reasonable case.
-  const bedtimeLookback = new Date(now.getTime() - 30 * 3600 * 1000);
+  const todayStart = localMidnight(now);
+  // Step back 12h from today's midnight to land safely in yesterday's
+  // calendar day regardless of DST, then take THAT day's midnight.
+  const yesterdayStart = localMidnight(new Date(todayStart.getTime() - 12 * 3600 * 1000));
 
+  // Bedtime: the one that STARTED yesterday.
+  const bedtimeRows = await sql`
+    select * from events
+    where type = 'bedtime'
+      and start_at >= ${yesterdayStart.toISOString()} and start_at < ${todayStart.toISOString()}
+    order by start_at desc limit 1
+  `;
+  const bedtime = bedtimeRows[0] ?? null;
+
+  // Naps: yesterday's calendar day.
   const naps = await sql`
     select * from events
     where type = 'sleep' and end_at is not null
-      and start_at >= ${windowStart.toISOString()} and start_at < ${now.toISOString()}
+      and start_at >= ${yesterdayStart.toISOString()} and start_at < ${todayStart.toISOString()}
     order by start_at asc
   `;
   const napCount = naps.length;
   const napTotalMs = naps.reduce((sum, n) => sum + (new Date(n.end_at) - new Date(n.start_at)), 0);
-
-  const bedtimeRows = await sql`
-    select * from events
-    where type = 'bedtime'
-      and start_at >= ${bedtimeLookback.toISOString()} and start_at < ${now.toISOString()}
-    order by start_at desc limit 1
-  `;
-  const bedtime = bedtimeRows[0] ?? null;
+  const lastNap = naps[naps.length - 1] ?? null;
 
   const missing = [];
   let overnightFeeds = [];
@@ -115,13 +139,16 @@ async function main() {
     if (feeds.length === 0) missing.push("overnight_feed");
   }
 
+  const bedtimeMs = bedtime?.end_at ? new Date(bedtime.end_at) - new Date(bedtime.start_at) : null;
+  const totalSleepMs = bedtimeMs != null ? napTotalMs + bedtimeMs : null;
+
   const result = {
-    windowStart: windowStart.toISOString(),
-    windowEnd: now.toISOString(),
+    dayOf: ymd(yesterdayStart), // which calendar day this summary covers
     naps: {
       count: napCount,
       totalMinutes: Math.round(napTotalMs / 60000),
-      totalWords: fmtDurationWords(napTotalMs),
+      total: fmtDurationWords(napTotalMs),
+      lastNapEndClock: lastNap ? fmtClock(lastNap.end_at) : null,
     },
     bedtime: bedtime
       ? {
@@ -129,18 +156,18 @@ async function main() {
           endAt: bedtime.end_at,
           startClock: fmtClock(bedtime.start_at),
           endClock: bedtime.end_at ? fmtClock(bedtime.end_at) : null,
-          durationMinutes: bedtime.end_at
-            ? Math.round((new Date(bedtime.end_at) - new Date(bedtime.start_at)) / 60000)
-            : null,
-          durationWords: bedtime.end_at
-            ? fmtDurationWords(new Date(bedtime.end_at) - new Date(bedtime.start_at))
-            : null,
+          durationMinutes: bedtimeMs != null ? Math.round(bedtimeMs / 60000) : null,
+          total: bedtimeMs != null ? fmtDurationWords(bedtimeMs) : null,
         }
       : null,
     overnightFeeds: {
       count: overnightFeeds.length,
       clockTimes: overnightFeeds.map((f) => fmtClock(f.start_at)),
     },
+    totalSleep:
+      totalSleepMs != null
+        ? { minutes: Math.round(totalSleepMs / 60000), total: fmtDurationWords(totalSleepMs) }
+        : null,
     missing, // [] means ready to report the full summary
   };
 

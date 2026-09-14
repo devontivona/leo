@@ -13,6 +13,23 @@ export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
+/** A start→end range for the timeline's leading time column. Naps and bedtime
+ *  care about both ends (wake-window tracking needs to see exactly when a nap
+ *  ended, not just how long it was), so this collapses a shared AM/PM suffix
+ *  ("2:42–3:06 PM") and keeps both suffixes when they differ ("11:50 AM–12:10
+ *  PM"). A still-running event shows just its start, with an arrow. */
+export function formatTimeRange(startIso: string, endIso: string | null): string {
+  const start = formatTime(startIso);
+  if (!endIso) return `${start} →`;
+  const end = formatTime(endIso);
+  const [, startSuffix] = start.split(" ");
+  const [, endSuffix] = end.split(" ");
+  if (startSuffix && startSuffix === endSuffix) {
+    return `${start.split(" ")[0]}–${end}`;
+  }
+  return `${start}–${end}`;
+}
+
 /** A stable per-local-day key for grouping. */
 export function dayKey(iso: string): string {
   const d = new Date(iso);
@@ -61,7 +78,9 @@ export function rowTitle(e: EventDTO): string {
   return "Diaper";
 }
 
-/** The detail line for a timeline row (handles in-progress timers). */
+/** The detail line for a timeline row (handles in-progress timers). Naps and
+ *  bedtime show their start/end in the leading time column (see
+ *  formatTimeRange), so here they just need the duration. */
 export function rowDetail(e: EventDTO): string {
   if (e.type === "diaper") return diaperWord(e);
   const running = e.endAt === null;
@@ -77,4 +96,12 @@ export function rowDetail(e: EventDTO): string {
   }
   // sleep (nap)
   return running ? "napping…" : formatDurationWords(Date.parse(e.endAt!) - Date.parse(e.startAt));
+}
+
+/** The leading time column for a row: a start–end range for naps/bedtime
+ *  (so wake-window tracking can see exactly when a nap ended), a bare start
+ *  time for feeds/diapers (they're points, not spans people watch the end of). */
+export function rowTime(e: EventDTO): string {
+  if (e.type === "sleep" || e.type === "bedtime") return formatTimeRange(e.startAt, e.endAt);
+  return formatTime(e.startAt);
 }
