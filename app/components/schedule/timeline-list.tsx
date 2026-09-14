@@ -52,7 +52,7 @@ export function TimelineList({
                   className="flex items-baseline gap-2 px-2 py-1 text-body"
                   style={{ borderTop: i === 0 ? "none" : "1px solid #e0e0e0" }}
                 >
-                  <span className="w-[11rem] shrink-0 whitespace-nowrap pr-1 text-small tabular-nums text-platinumDark">
+                  <span className="shrink-0 whitespace-nowrap text-small tabular-nums text-platinumDark">
                     {rowTime(e)}
                   </span>
                   <span className="shrink-0 font-bold">{rowTitle(e)}</span>
