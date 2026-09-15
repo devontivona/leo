@@ -54,12 +54,20 @@ export function formatDurationWords(ms: number): string {
   return m ? `${h}h ${m}m` : `${h}h`;
 }
 
-/** Feed sources as a phrase: "Left + Right", "Bottle 90 ml", "Left + Bottle". */
+/** ml stored, oz displayed (bottles are commonly measured/marked in oz in the
+ *  US) — one decimal place, trimmed ("4 oz" not "4.0 oz", but "3.5 oz" kept). */
+export function mlToOz(ml: number): string {
+  const oz = ml / 29.5735;
+  const rounded = Math.round(oz * 10) / 10;
+  return (rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)) + " oz";
+}
+
+/** Feed sources as a phrase: "Left + Right", "Bottle 3 oz", "Left + Bottle". */
 export function feedSources(e: EventDTO): string {
   const parts: string[] = [];
   if (e.fedLeft) parts.push("Left");
   if (e.fedRight) parts.push("Right");
-  if (e.fedBottle) parts.push(e.bottleMl != null ? `Bottle ${e.bottleMl} ml` : "Bottle");
+  if (e.fedBottle) parts.push(e.bottleMl != null ? `Bottle ${mlToOz(e.bottleMl)}` : "Bottle");
   return parts.join(" + ");
 }
 
@@ -88,7 +96,7 @@ export function rowDetail(e: EventDTO): string {
   const running = e.endAt === null;
   if (e.type === "feed") {
     if (e.fedBottle) {
-      const vol = e.bottleMl != null ? `${e.bottleMl} ml` : "Bottle";
+      const vol = e.bottleMl != null ? mlToOz(e.bottleMl) : "Bottle";
       if (running) return `${vol} · feeding…`;
       const dur = formatDurationWords(Date.parse(e.endAt!) - Date.parse(e.startAt));
       return `${vol} · ${dur}`;

@@ -30,7 +30,9 @@ export function FeedForm({
   onCancel: () => void;
 }) {
   const [sources, setSources] = useState<Source[]>([]);
-  const [bottleMl, setBottleMl] = useState("");
+  // Entered in oz (US bottles are marked in oz) — converted to ml, what the
+  // DB actually stores, only at submit time.
+  const [bottleOz, setBottleOz] = useState("");
   const [mode, setMode] = useState<Mode>("live");
   const [startLocal, setStartLocal] = useState(() => toLocalInputValue(new Date()));
   const [duration, setDuration] = useState("");
@@ -42,7 +44,7 @@ export function FeedForm({
     fedLeft: sources.includes("left"),
     fedRight: sources.includes("right"),
     fedBottle: hasBottle,
-    bottleMl: hasBottle && bottleMl ? Number(bottleMl) : undefined,
+    bottleMl: hasBottle && bottleOz ? Math.round(Number(bottleOz) * 29.5735) : undefined,
   });
 
   const submit = () => {
@@ -70,13 +72,14 @@ export function FeedForm({
       </div>
 
       {hasBottle && (
-        <Field label="Bottle (ml)">
+        <Field label="Bottle (oz)">
           <TextInput
             type="number"
-            inputMode="numeric"
+            inputMode="decimal"
             min={0}
-            value={bottleMl}
-            onChange={(e) => setBottleMl(e.target.value)}
+            step={0.5}
+            value={bottleOz}
+            onChange={(e) => setBottleOz(e.target.value)}
             placeholder="optional"
           />
         </Field>
